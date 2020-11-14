@@ -122,7 +122,9 @@ int main(int argc, char *argv[]) {
     */
     
     const double *gps_values = wb_gps_get_values(gps);
-        printf("Using the GPS device: %.3f %.3f %.3f\n", gps_values[0], gps_values[1], gps_values[2]);
+    const double x_coordinate = gps_values[0];
+    const double y_coordinate = gps_values[2];
+    printf("Using the GPS device: %.3f %.3f\n", x_coordinate, y_coordinate);
 
     /* compute speed values*/
     for (i = 0; i < 2; i++) {
