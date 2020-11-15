@@ -16,10 +16,9 @@
 #include <webots/gps.h>
 #include <webots/compass.h>
 
-#define PRECISION .3
+
 #define PI 3.141592
 #define RADIUS 2
-#define DELTA 5
 #define MAX_SPEED 10
 #define TIME_STEP 64
 
@@ -78,25 +77,17 @@ int main(int argc, char *argv[])
   double sensors_value[8];
 
   /*Variables for destination determination*/
-  int N, n, delta;
-  double xD, yD, y0, x0, x, y, initial_distance, final_distance;
-  double direction_gradient = 0;
-  double destination_gradient = 0;
-  double distance_difference = 0;
-  delta = 0;
+  int N, n;
+  double xD, yD, x, y, distance;
   N = 0;
   n = 1;
   xD = 0;
   yD = 0;
-  y0 = 0;
-  x0 = 0;
   x = 0;
   y = 0;
-  initial_distance = 100;
-  final_distance = 100;
+  distance = 100;
 
   bool simulation_started = false;
-  bool right_direction = false;
   /* initialize Webots */
   wb_robot_init();
 
@@ -141,10 +132,6 @@ int main(int argc, char *argv[])
   while (true)
   {
 
-    if (delta > DELTA)
-    {
-      delta = 0;
-    }
 
     /*Get input from user*/
     switch (wb_keyboard_get_key())
@@ -234,11 +221,10 @@ int main(int argc, char *argv[])
       y = gps_values[2];
 
       
-      
       /*Get Compass Values*/
       const double *north = wb_compass_get_values(compass);
       double bearing = get_bearing_in_degrees(north[0],north[2]);
-      
+      //convert bearing to integer for easier comparison
       int bearing_degree = bearing;
       
       printf("%d \n",bearing_degree);
@@ -264,17 +250,8 @@ int main(int argc, char *argv[])
 
     step();
 
-    if (delta == DELTA)
-    {
 
-      /*record the old coordinates to determine movements and directions*/
-      x0 = x;
-      y0 = y;
 
-      initial_distance = sqrt(((y0 - yD) * (y0 - yD)) + ((x0 - xD) * (x0 - xD)));
-    }
-
-    delta++;
   }
 
   wb_robot_cleanup();
