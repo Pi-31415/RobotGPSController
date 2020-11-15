@@ -14,16 +14,13 @@
 #include <webots/robot.h>
 #include <webots/keyboard.h>
 #include <webots/gps.h>
+#include <webots/compass.h>
 
 #define PRECISION .3
-
 #define PI 3.141592
 #define RADIUS 2
-
 #define DELTA 5
-
-#define MAX_SPEED 20
-
+#define MAX_SPEED 10
 #define TIME_STEP 64
 
 static int get_time_step()
@@ -57,6 +54,17 @@ double get_yDestination(int N, int n)
   result = RADIUS * sin((2 * PI * n) / (N));
   return result;
 }
+
+/*get the bearing value from the compass*/
+
+double get_bearing_in_degrees(double a,double b) {
+  double rad = atan2(a,b);
+  double bearing = (rad - 1.5708) / M_PI * 180.0;
+  if (bearing < 0.0)
+    bearing = bearing + 360.0;
+  return bearing;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -95,6 +103,8 @@ int main(int argc, char *argv[])
   /* get a handler to the motors and set target position to infinity (speed control). */
   left_motor = wb_robot_get_device("left wheel motor");
   right_motor = wb_robot_get_device("right wheel motor");
+ 
+  
   wb_motor_set_position(left_motor, INFINITY);
   wb_motor_set_position(right_motor, INFINITY);
   wb_motor_set_velocity(left_motor, 0.0);
@@ -119,6 +129,10 @@ int main(int argc, char *argv[])
   /* get and enable GPS device */
   WbDeviceTag gps = wb_robot_get_device("gps");
   wb_gps_enable(gps, TIME_STEP);
+  
+  /*get and enable compass*/
+  WbDeviceTag compass = wb_robot_get_device("compass");
+  wb_compass_enable(compass, TIME_STEP);
 
   /* get key presses from keyboard */
   wb_keyboard_enable(TIME_STEP);
@@ -196,10 +210,6 @@ int main(int argc, char *argv[])
       break;
     }
 
-    if (!simulation_started && N != 0)
-    {
-      printf("Forming %d-sided polygon. \n", N);
-    }
 
     if (simulation_started)
     {
@@ -217,49 +227,35 @@ int main(int argc, char *argv[])
      sensors_value[0], sensors_value[1], sensors_value[2], sensors_value[3],
      sensors_value[4], sensors_value[5], sensors_value[6], sensors_value[7]);
     */
+    
 
       const double *gps_values = wb_gps_get_values(gps);
       x = gps_values[0];
       y = gps_values[2];
 
       
-      /*Movement Code Begins Here*/
-      final_distance = sqrt(((y - yD) * (y - yD)) + ((x - xD) * (x - xD)));
       
-      distance_difference = initial_distance-final_distance;
+      /*Get Compass Values*/
+      const double *north = wb_compass_get_values(compass);
+      double bearing = get_bearing_in_degrees(north[0],north[2]);
       
-      direction_gradient = (y-y0)/(x-x0);
-      destination_gradient = (y-yD)/(x-xD);
+      int bearing_degree = bearing;
+      
+      printf("%d \n",bearing_degree);
       
       
-      if(fabs(direction_gradient-destination_gradient)<0.1){
-        right_direction = true;
-      }
       
-      if(!right_direction){
-        speed_left = MAX_SPEED;
-        speed_right = 0.1*MAX_SPEED;
+      if(abs(270-bearing_degree) < 2){
+      
+      speed_left = 1*MAX_SPEED;
+      speed_right = 1*MAX_SPEED;
+      
       }else{
+      speed_left = -0.5*MAX_SPEED;
+      speed_right = 0.5*MAX_SPEED;
       
-        speed_left = MAX_SPEED;
-        speed_right = MAX_SPEED;
-        
       }
-      
-      
-      
-      if(final_distance < 0.07){
-        speed_left = 0;
-        speed_right = 0;
-      }
-      
-      
-      
 
-      printf("n, (xD,yD)(x,y)(x0,y0),dirG, desG, dist: %d (%.3f , %.3f) (%.5f , %.5f) (%.5f , %.5f) %.5f : %.5f : %.5f\n",n, xD,yD,x, y,x0, y0,direction_gradient,destination_gradient,final_distance);
-
-
-      
 
       /* set speed values */
       wb_motor_set_velocity(left_motor, speed_left);
