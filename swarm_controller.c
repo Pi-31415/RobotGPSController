@@ -2,7 +2,6 @@
  * Simple Swarm Robot Controller
  * Maryam and Pi
  * 
-
  */
 
 #include <stdio.h>
@@ -214,7 +213,7 @@ int main(int argc, char *argv[])
       double robot_bearing_degree = get_robot_bearing(north[0], north[2]);
 
       //Debug robot orientation
-      //printf("Db %f / Rb %f \n",robot_bearing_degree,destination_bearing);
+      printf("Db %f / Rb %f \n",robot_bearing_degree,destination_bearing);
 
       //Avoid obstacles
       for (i = 0; i < 8; i++)
@@ -233,7 +232,7 @@ int main(int argc, char *argv[])
           {
             if (distance < 0.1)
             {
-              printf("Reached Destination %d ", n);
+              printf("Reached Destination %d of %d\n", n,N);
               //Edit this part for reach-destination
               if (n >= N)
               {
@@ -246,14 +245,14 @@ int main(int argc, char *argv[])
             }
             else
             {
-              printf("Heading to Destination %d ", n);
+              printf("Heading to Destination %d of %d \n", n,N);
               speed_left = 1 * MAX_SPEED;
               speed_right = 1 * MAX_SPEED;
             }
           }
           else
           {
-            printf("Targeting Destination %d ", n);
+            printf("Targeting Destination %d of %d \n", n,N);
             speed_left = -0.3 * MAX_SPEED;
             speed_right = 0.3 * MAX_SPEED;
           }
