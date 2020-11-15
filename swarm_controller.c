@@ -17,7 +17,7 @@
 #include <webots/compass.h>
 
 #define PI 3.141592
-#define RADIUS 0.5
+#define RADIUS 1
 #define MAX_SPEED 15
 #define TIME_STEP 64
 
@@ -195,17 +195,7 @@ int main(int argc, char *argv[])
       xD = get_xDestination(N, n);
       yD = get_yDestination(N, n);
 
-      /* get sensors values */
-      for (i = 0; i < 8; i++)
-      {
-        sensors_value[i] = wb_distance_sensor_get_value(distance_sensor[i]);
-      }
-
-      /*printf("prox values = %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f\n",
-     sensors_value[0], sensors_value[1], sensors_value[2], sensors_value[3],
-     sensors_value[4], sensors_value[5], sensors_value[6], sensors_value[7]);
-    */
-
+      /*Get GPS Values*/
       const double *gps_values = wb_gps_get_values(gps);
       x = gps_values[0];
       y = gps_values[2];
@@ -222,39 +212,52 @@ int main(int argc, char *argv[])
       /*Get Compass Values*/
       const double *north = wb_compass_get_values(compass);
       double robot_bearing_degree = get_robot_bearing(north[0], north[2]);
-      //convert bearing to integer for easier comparison
-      //robot_bearing_degree holds the orientation of the robot
 
       //Debug robot orientation
       //printf("Db %f / Rb %f \n",robot_bearing_degree,destination_bearing);
 
-      if (fabs(destination_bearing - robot_bearing_degree) < 3)
+      //Avoid obstacles
+      for (i = 0; i < 8; i++)
       {
-
-        if (distance < 0.1)
+        //first avoid obstacles by turning right, then do the job
+        sensors_value[i] = wb_distance_sensor_get_value(distance_sensor[i]);
+        if (sensors_value[i] >= 50)
         {
-          printf("Reached Destination %d ", n);
-          if (n >= N)
-          {
-            n = 1;
-          }
-          else
-          {
-            n++;
-          }
+          speed_left = 0 * MAX_SPEED;
+          speed_right = 1 * MAX_SPEED;
         }
         else
         {
-          printf("Heading to Destination %d ", n);
-          speed_left = 1 * MAX_SPEED;
-          speed_right = 1 * MAX_SPEED;
+
+          if (fabs(destination_bearing - robot_bearing_degree) < 3)
+          {
+            if (distance < 0.1)
+            {
+              printf("Reached Destination %d ", n);
+              //Edit this part for reach-destination
+              if (n >= N)
+              {
+                n = 1;
+              }
+              else
+              {
+                n++;
+              }
+            }
+            else
+            {
+              printf("Heading to Destination %d ", n);
+              speed_left = 1 * MAX_SPEED;
+              speed_right = 1 * MAX_SPEED;
+            }
+          }
+          else
+          {
+            printf("Targeting Destination %d ", n);
+            speed_left = -0.3 * MAX_SPEED;
+            speed_right = 0.3 * MAX_SPEED;
+          }
         }
-      }
-      else
-      {
-        printf("Targeting Destination %d ", n);
-        speed_left = -0.3 * MAX_SPEED;
-        speed_right = 0.3 * MAX_SPEED;
       }
 
       /* set speed values */
