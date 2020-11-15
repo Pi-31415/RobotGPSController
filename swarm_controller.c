@@ -16,10 +16,9 @@
 #include <webots/gps.h>
 #include <webots/compass.h>
 
-
 #define PI 3.141592
-#define RADIUS 2
-#define MAX_SPEED 10
+#define RADIUS 0.5
+#define MAX_SPEED 15
 #define TIME_STEP 64
 
 static int get_time_step()
@@ -56,14 +55,23 @@ double get_yDestination(int N, int n)
 
 /*get the bearing value from the compass*/
 
-double get_bearing_in_degrees(double a,double b) {
-  double rad = atan2(a,b);
+double get_robot_bearing(double a, double b)
+{
+  double rad = atan2(a, b);
   double bearing = (rad - 1.5708) / M_PI * 180.0;
   if (bearing < 0.0)
     bearing = bearing + 360.0;
   return bearing;
 }
 
+/*get the bearing of destination*/
+double get_destination_bearing(double x, double y, double xD, double yD)
+{
+  double bearing = atan2((yD - y), (xD - x)) * (180.0 / PI);
+  if (bearing < 0.0)
+    bearing = bearing + 360.0;
+  return bearing;
+}
 
 int main(int argc, char *argv[])
 {
@@ -94,8 +102,7 @@ int main(int argc, char *argv[])
   /* get a handler to the motors and set target position to infinity (speed control). */
   left_motor = wb_robot_get_device("left wheel motor");
   right_motor = wb_robot_get_device("right wheel motor");
- 
-  
+
   wb_motor_set_position(left_motor, INFINITY);
   wb_motor_set_position(right_motor, INFINITY);
   wb_motor_set_velocity(left_motor, 0.0);
@@ -120,7 +127,7 @@ int main(int argc, char *argv[])
   /* get and enable GPS device */
   WbDeviceTag gps = wb_robot_get_device("gps");
   wb_gps_enable(gps, TIME_STEP);
-  
+
   /*get and enable compass*/
   WbDeviceTag compass = wb_robot_get_device("compass");
   wb_compass_enable(compass, TIME_STEP);
@@ -132,63 +139,48 @@ int main(int argc, char *argv[])
   while (true)
   {
 
-
     /*Get input from user*/
     switch (wb_keyboard_get_key())
     {
     case '3':
     {
       N = 3;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '4':
     {
       N = 4;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '5':
     {
       N = 5;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '6':
     {
       N = 6;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '7':
     {
       N = 7;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '8':
     {
       N = 8;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
     case '9':
     {
       N = 9;
-      xD = get_xDestination(N, n);
-      yD = get_yDestination(N, n);
       simulation_started = true;
       break;
     }
@@ -197,10 +189,9 @@ int main(int argc, char *argv[])
       break;
     }
 
-
     if (simulation_started)
     {
-    
+
       xD = get_xDestination(N, n);
       yD = get_yDestination(N, n);
 
@@ -214,34 +205,57 @@ int main(int argc, char *argv[])
      sensors_value[0], sensors_value[1], sensors_value[2], sensors_value[3],
      sensors_value[4], sensors_value[5], sensors_value[6], sensors_value[7]);
     */
-    
 
       const double *gps_values = wb_gps_get_values(gps);
       x = gps_values[0];
       y = gps_values[2];
 
-      
+      distance = sqrt(((x - xD) * (x - xD)) + ((y - yD) * (y - yD)));
+
+      //debug position
+      //printf("%d (%f,%f) : (%f,%f) : %f : Bearings : ",n,x,y,xD,yD, distance);
+
+      double destination_bearing = get_destination_bearing(x, y, xD, yD);
+
+      //printf("%f \n",destination_bearing);
+
       /*Get Compass Values*/
       const double *north = wb_compass_get_values(compass);
-      double bearing = get_bearing_in_degrees(north[0],north[2]);
+      double robot_bearing_degree = get_robot_bearing(north[0], north[2]);
       //convert bearing to integer for easier comparison
-      int bearing_degree = bearing;
-      
-      printf("%d \n",bearing_degree);
-      
-      
-      
-      if(abs(270-bearing_degree) < 2){
-      
-      speed_left = 1*MAX_SPEED;
-      speed_right = 1*MAX_SPEED;
-      
-      }else{
-      speed_left = -0.5*MAX_SPEED;
-      speed_right = 0.5*MAX_SPEED;
-      
-      }
+      //robot_bearing_degree holds the orientation of the robot
 
+      //Debug robot orientation
+      //printf("Db %f / Rb %f \n",robot_bearing_degree,destination_bearing);
+
+      if (fabs(destination_bearing - robot_bearing_degree) < 3)
+      {
+
+        if (distance < 0.1)
+        {
+          printf("Reached Destination %d ", n);
+          if (n >= N)
+          {
+            n = 1;
+          }
+          else
+          {
+            n++;
+          }
+        }
+        else
+        {
+          printf("Heading to Destination %d ", n);
+          speed_left = 1 * MAX_SPEED;
+          speed_right = 1 * MAX_SPEED;
+        }
+      }
+      else
+      {
+        printf("Targeting Destination %d ", n);
+        speed_left = -0.3 * MAX_SPEED;
+        speed_right = 0.3 * MAX_SPEED;
+      }
 
       /* set speed values */
       wb_motor_set_velocity(left_motor, speed_left);
@@ -249,9 +263,6 @@ int main(int argc, char *argv[])
     }
 
     step();
-
-
-
   }
 
   wb_robot_cleanup();
