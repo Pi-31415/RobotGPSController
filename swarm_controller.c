@@ -223,8 +223,8 @@ int main(int argc, char *argv[])
         sensors_value[i] = wb_distance_sensor_get_value(distance_sensor[i]);
         if (sensors_value[i] >= 50)
         {
-          speed_left = 0 * MAX_SPEED;
-          speed_right = 1 * MAX_SPEED;
+          speed_left = 1 * MAX_SPEED;
+          speed_right = -0.1 * MAX_SPEED;
         }
         else
         {
