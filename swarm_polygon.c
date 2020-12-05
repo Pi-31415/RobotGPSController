@@ -1,8 +1,10 @@
 /*
- * Simple Swarm Robot Controller
- * Maryam and Pi
- * Fully working polygon Movement
+ * CADT-UH 1038 - Autonomous and Social Robots
+ * Simple Pattern Formation of a Robot Swarm
+ * Elisa Swarm Controller by Maryam and Pi
+ * Description: This controller controls the Elisa Robots to move in polygons from keyboard input
  */
+ 
 
 #include <stdio.h>
 #include <stdlib.h>
